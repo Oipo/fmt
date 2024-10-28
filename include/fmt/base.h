@@ -976,7 +976,7 @@ class iterator_buffer : public Traits, public buffer<T> {
   enum { buffer_size = 256 };
   T data_[buffer_size];
 
-  static FMT_CONSTEXPR void grow(buffer<T>& buf, size_t) {
+  static FMT_CONSTEXPR void grow1(buffer<T>& buf, size_t) {
     if (buf.size() == buffer_size) static_cast<iterator_buffer&>(buf).flush();
   }
 
@@ -990,10 +990,10 @@ class iterator_buffer : public Traits, public buffer<T> {
 
  public:
   explicit iterator_buffer(OutputIt out, size_t n = buffer_size)
-      : Traits(n), buffer<T>(grow, data_, 0, buffer_size), out_(out) {}
+      : Traits(n), buffer<T>(grow1, data_, 0, buffer_size), out_(out) {}
   iterator_buffer(iterator_buffer&& other) noexcept
       : Traits(other),
-        buffer<T>(grow, data_, 0, buffer_size),
+        buffer<T>(grow1, data_, 0, buffer_size),
         out_(other.out_) {}
   ~iterator_buffer() {
     // Don't crash if flush fails during unwinding.
@@ -1016,7 +1016,7 @@ class iterator_buffer<T*, T, fixed_buffer_traits> : public fixed_buffer_traits,
   enum { buffer_size = 256 };
   T data_[buffer_size];
 
-  static FMT_CONSTEXPR void grow(buffer<T>& buf, size_t) {
+  static FMT_CONSTEXPR void grow2(buffer<T>& buf, size_t) {
     if (buf.size() == buf.capacity())
       static_cast<iterator_buffer&>(buf).flush();
   }
@@ -1032,7 +1032,7 @@ class iterator_buffer<T*, T, fixed_buffer_traits> : public fixed_buffer_traits,
 
  public:
   explicit iterator_buffer(T* out, size_t n = buffer_size)
-      : fixed_buffer_traits(n), buffer<T>(grow, out, 0, n), out_(out) {}
+      : fixed_buffer_traits(n), buffer<T>(grow2, out, 0, n), out_(out) {}
   iterator_buffer(iterator_buffer&& other) noexcept
       : fixed_buffer_traits(other),
         buffer<T>(static_cast<iterator_buffer&&>(other)),
@@ -1074,7 +1074,7 @@ class iterator_buffer<
   using value_type = typename container_type::value_type;
   container_type& container_;
 
-  static FMT_CONSTEXPR void grow(buffer<value_type>& buf, size_t capacity) {
+  static FMT_CONSTEXPR void grow3(buffer<value_type>& buf, size_t capacity) {
     auto& self = static_cast<iterator_buffer&>(buf);
     self.container_.resize(capacity);
     self.set(&self.container_[0], capacity);
@@ -1082,7 +1082,7 @@ class iterator_buffer<
 
  public:
   explicit iterator_buffer(container_type& c)
-      : buffer<value_type>(grow, c.size()), container_(c) {}
+      : buffer<value_type>(grow3, c.size()), container_(c) {}
   explicit iterator_buffer(OutputIt out, size_t = 0)
       : iterator_buffer(get_container(out)) {}
 
@@ -1096,14 +1096,14 @@ template <typename T = char> class counting_buffer : public buffer<T> {
   T data_[buffer_size];
   size_t count_ = 0;
 
-  static FMT_CONSTEXPR void grow(buffer<T>& buf, size_t) {
+  static FMT_CONSTEXPR void grow4(buffer<T>& buf, size_t) {
     if (buf.size() != buffer_size) return;
     static_cast<counting_buffer&>(buf).count_ += buf.size();
     buf.clear();
   }
 
  public:
-  counting_buffer() : buffer<T>(grow, data_, 0, buffer_size) {}
+  counting_buffer() : buffer<T>(grow4, data_, 0, buffer_size) {}
 
   auto count() -> size_t { return count_ + this->size(); }
 };
